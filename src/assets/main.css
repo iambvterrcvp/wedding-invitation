@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+:root {
+  --default-background-color: #ffffff;
+  --default-background-color-soft: #f8f8f8;
+  --default-background-color-mute: #f2f2f2;
+  --default-divider-1: rgba(60, 60, 60, 0.29);
+  --default-divider-2: rgba(60, 60, 60, 0.12);
+  --default-text-1: #2c3e50;
+  --default-text-2: rgba(60, 60, 60, 0.66);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --default-background-color: #181818;
+    --default-background-color-soft: #222222;
+    --default-background-color-mute: #282828;
+    --default-divider-1: rgba(84, 84, 84, 0.65);
+    --default-divider-2: rgba(84, 84, 84, 0.48);
+    --default-text-1: #ffffff;
+    --default-text-2: rgba(235, 235, 235, 0.64);
+  }
+}
+
+@theme {
+  --color-theme-bg: var(--default-background-color);
+  --color-theme-bg-soft: var(--default-background-color-soft);
+  --color-theme-bg-mute: var(--default-background-color-mute);
+
+  --color-theme-border: var(--default-divider-2);
+  --color-theme-border-hover: var(--default-divider-1);
+
+  --color-theme-heading: var(--default-text-1);
+  --color-theme-text: var(--default-text-1);
+
+  --color-text-black: var(--default-text-1);
+
+  --section-gap: 160px;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    font-weight: normal;
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+  h2 {
+    font-size: var(--text-xl);
+  }
+  h3 {
+    font-size: var(--text-lg);
+  }
+  a {
+    @apply cursor-pointer text-pink-500;
+    text-decoration: none;
+    transition: 0.4s;
+    padding: 3px;
+  }
+  a:hover {
+    @apply bg-pink-500/20;
+  }
+
+  body {
+    @apply text-theme-text bg-theme-bg flex min-h-dvh place-items-center text-base;
+    transition:
+      color 0.5s,
+      background-color 0.5s;
+    font-family: 'Silkscreen', sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #app {
+    @apply mx-auto max-w-7xl p-2;
+  }
+}
