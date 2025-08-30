@@ -1,6 +1,11 @@
-<script setup>
-import { ref, onMounted, computed, reactive } from 'vue'
-const props = defineProps()
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+
+interface Props {
+  fromLocation: string
+}
+
+const props = defineProps<Props>()
 
 const isAnimating = ref(false)
 const animationProgress = ref(0)
@@ -22,9 +27,26 @@ const coordinates = {
 }
 
 const fromCoords = computed(
-  () => coordinates[props.fromLocation] || coordinates.USA,
+  () => coordinates[props.fromLocation as keyof typeof coordinates] || coordinates.USA,
 )
 const toCoords = computed(() => coordinates.Cebu)
+
+// Calculate airplane position during animation
+const airplanePosition = computed(() => {
+  const progress = animationProgress.value
+  const x = fromCoords.value.x + (toCoords.value.x - fromCoords.value.x) * progress
+  const y = fromCoords.value.y + (toCoords.value.y - fromCoords.value.y) * progress
+  return { x, y }
+})
+
+// Calculate airplane rotation based on direction
+const airplaneRotation = computed(() => {
+  const deltaX = toCoords.value.x - fromCoords.value.x
+  const deltaY = toCoords.value.y - fromCoords.value.y
+  const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI)
+  // Add 90 degrees because the airplane.png nose points up (top), but we need it to point right (0 degrees)
+  return angle + 90
+})
 
 const startAnimation = () => {
   isAnimating.value = true
@@ -52,60 +74,8 @@ const startAnimation = () => {
   requestAnimationFrame(animate)
 }
 
-class Vec2 {
-  constructor(x = 0, y = 0) {
-    this.x = x;
-    this.y = y;
-  }
-}
-
-const keys = {};
-window.addEventListener("keydown", (e) => { keys[e.key] = true; });
-window.addEventListener("keyup", (e) => { keys[e.key] = false; });
-
-let frameIdx = 0
-const timestep = 1000 / 60
-let lastTime = performance.now()
-let accumulator = 0
-
-let planePos = reactive(new Vec2(0,0))
-let planeRot = reactive(0)
-
-const update = (delta) => {
-  let speed = .01 
-  let dir = new Vec2(0,0)
-  if (keys["ArrowLeft"]) dir.x = -1; else if (keys["ArrowRight"]) dir.x = 1
-  if (keys["ArrowUp"]) dir.y = -1; else if (keys["ArrowDown"]) dir.y = 1
-  
-  if (dir.x != 0 || dir.y != 0) {
-    let angleRad = Math.atan2(dir.y, dir.x)
-    let angleDeg = angleRad * (180 / Math.PI) + 90
-    planeRot = angleDeg
-    console.log('Plane Rot: ' + planeRot)
-
-  } 
-  planePos.x = planePos.x + dir.x * timestep * speed
-  planePos.y = planePos.y + dir.y * timestep * speed
-}
-
-function loop() {
-  let now =  performance.now()
-  let delta = now - lastTime;
-  lastTime = now;
-  accumulator += delta;
-
-  while (accumulator >= timestep) {
-    update(delta);
-    frameIdx++
-    accumulator -= timestep;
-  }
-
-  requestAnimationFrame(loop);
-}
-
-
 onMounted(() => {
-  requestAnimationFrame(loop);
+  setTimeout(startAnimation, 500)
 })
 </script>
 
@@ -239,8 +209,8 @@ onMounted(() => {
 
         <!-- Airplane -->
         <g
-          :transform="`translate(${planePos.x}, ${planePos.y}) rotate(${planeRot})`"
-          class="none"
+          :transform="`translate(${airplanePosition.x}, ${airplanePosition.y}) rotate(${airplaneRotation})`"
+          class="transition-all duration-100"
         >
           <!-- Airplane image -->
           <image
@@ -255,7 +225,7 @@ onMounted(() => {
         <!-- Click Me Button (appears when animation completes) -->
         <g v-if="showClickButton" class="cursor-pointer group" @click="handlePlaneClick">
           <!-- Speech bubble background positioned at airplane nose -->
-          <g :transform="`translate(${planePos.x}, ${planePos.y})`">
+          <g :transform="`translate(${airplanePosition.x}, ${airplanePosition.y})`">
             <!-- Bubble with integrated pointer (single path to avoid stroke separation) -->
             <path
               d="M -11,-12 L 11,-12 Q 12,-12 12,-11 L 12,-7 Q 12,-6 11,-6 L 1,-6 L 0,-2 L -1,-6 L -11,-6 Q -12,-6 -12,-7 L -12,-11 Q -12,-12 -11,-12 Z"
