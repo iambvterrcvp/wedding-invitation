@@ -8,6 +8,11 @@ class Vec2 {
     this.y = y;
   }
 }
+class Bullet {
+  life = 0
+  pos = new Vec2(0, 0);
+  dir = new Vec2(0, 0);
+}
 
 let mouse = reactive(new Vec2(0, 0))
 const canvasRef = ref(null);
@@ -36,9 +41,11 @@ let canvasSize = new Vec2(100, 60)
 let brideSize = new Vec2(16, 16)
 const bridePos = new Vec2(2, canvasSize.y - brideSize.y - 5)
 const rifleSize = new Vec2(12, 12)
-const riflePos = new Vec2(bridePos.x + 5, bridePos.y + 3.5)
-const rifleRotPivot = new Vec2(riflePos.x + 3, riflePos.y + 5)
+const riflePos = new Vec2(bridePos.x + 3, bridePos.y + 2.5)
+const rifleRotPivot = new Vec2(riflePos.x + 5, riflePos.y + 5)
 const rifleRange = new Vec2(30, -40)
+const bulletSize = new Vec2(12, 12)
+
 
 let frameIdx = 0
 const timestep = 1000 / 60
@@ -62,23 +69,56 @@ function update_windows() {
   }
 }
 
+let bullets = ref([])
+function update_bullets(delta, speed) {
+  bullets.value.forEach(bullet => {
+    bullet.life += delta
+    bullet.pos.x += bullet.dir.x * speed * delta;
+    bullet.pos.y += bullet.dir.y * speed * delta;
+  });
+  bullets.value = bullets.value.filter(bullet => bullet.life < 1500);
+}
+
+let rifleDir = reactive(new Vec2(0,0))
 let rifleAngle = ref(0)
 
+function normalize(vec) {
+  const len = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+  if (len === 0) return { x: 0, y: 0 };
+  return { x: vec.x / len, y: vec.y / len };
+}
+
+function dir_to_angle(dir) {
+  return Math.atan2(dir.y, dir.x) * 180 / Math.PI
+}
+
+let bulletDelay = 1000000
 const update = (delta) => {
-  let speed = .02
+  const walkSpeed = .02
+  const bulletSpeed = .07
   let dir = new Vec2(0,0)
   if (keys["ArrowLeft"]) dir.x = -1; else if (keys["ArrowRight"]) dir.x = 1
+
+  bulletDelay += delta
+  if (keys[" "] && bulletDelay > 200) {
+    bulletDelay = 0
+    let bullet = new Bullet();
+    bullet.pos = new Vec2(riflePos.x + rifleDir.x * 8.5, riflePos.y  + rifleDir.y * 8.5)
+    bullet.dir = new Vec2(rifleDir.x, rifleDir.y)
+    bullets.value.push(bullet)
+  }
   
   if (dir.x != 0) {
     brideScale.x = dir.x > 0 ? 1 : -1
   } 
-  walkedDistance.x = walkedDistance.x + dir.x * delta * speed
+  walkedDistance.x = walkedDistance.x + dir.x * delta * walkSpeed
 
-  let diffMouseBride = new Vec2(mouse.x - 2, mouse.y - (canvasSize.y - brideSize.y - 5))
-  let angle = Math.atan2(diffMouseBride.y, diffMouseBride.x) * 180 / Math.PI
+  rifleDir = normalize(new Vec2(mouse.x - 2, mouse.y - (canvasSize.y - brideSize.y - 5)))
+  let angle = dir_to_angle(rifleDir)
   angle = Math.min(Math.max(angle, rifleRange.y), rifleRange.x)
   rifleAngle.value = angle
   update_windows()
+  update_bullets(delta, bulletSpeed)
 }
 
 function loop() {
@@ -169,13 +209,23 @@ onMounted(() => {
           :height="brideSize.y"
         />
         <image
-          href="/rifle.png"
-          :x="riflePos.x"
-          :y="riflePos.y"
-          :width="rifleSize.x"
-          :height="rifleSize.y"
-          :transform="`rotate(${rifleAngle} ${rifleRotPivot.x} ${rifleRotPivot.y})` "
-        />
+        v-for="(bullet, i) in bullets"
+          :key="i"
+          href="/bouquet.png"
+          :x="bullet.pos.x"
+          :y="bullet.pos.y"
+          :width="bulletSize.x"
+          :height="bulletSize.y"
+          :transform="`rotate(${dir_to_angle(bullet.dir) + 90} ${bullet.pos.x + bulletSize.x/2} ${bullet.pos.y + bulletSize.y / 2})` "
+          />
+          <image
+            href="/bazooka.png"
+            :x="riflePos.x"
+            :y="riflePos.y"
+            :width="rifleSize.x"
+            :height="rifleSize.y"
+            :transform="`rotate(${rifleAngle} ${rifleRotPivot.x} ${rifleRotPivot.y})` "
+          />
       </svg>
     </div>
   </div>
