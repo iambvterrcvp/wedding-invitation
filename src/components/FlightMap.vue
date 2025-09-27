@@ -9,6 +9,8 @@ class Vec2 {
   }
 }
 
+
+
 const mod = (n, m) => ((n % m) + m) % m
 
 
@@ -27,7 +29,22 @@ let accumulator = 0
 let bridePos = reactive(new Vec2(brideSize.x/2, canvasSize.y - brideSize.y/2 - 5))
 let brideScale = reactive(new Vec2(1,1))
 
+let windows = []
+const windowsCount = 5
+for (let i = 0; i < windowsCount; i++) {
+  windows.push(new Vec2())
+}
+update_windows()
+
+function update_windows() {
+  for (let i = 0; i < windowsCount; i++) {
+    windows[i].x = -canvasSize.x*1/3 + mod(canvasSize.x * (i+1)/3 -bridePos.x, canvasSize.x*5/3)
+    windows[i].y = canvasSize.y /2 - 16 - 7
+  }
+}
+
 const update = (delta) => {
+
   let speed = .02
   let dir = new Vec2(0,0)
   if (keys["ArrowLeft"]) dir.x = -1; else if (keys["ArrowRight"]) dir.x = 1
@@ -35,7 +52,9 @@ const update = (delta) => {
   if (dir.x != 0) {
     brideScale.x = dir.x > 0 ? 1 : -1
   } 
-  bridePos.x = bridePos.x + dir.x * timestep * speed
+  bridePos.x = bridePos.x + dir.x * delta * speed
+
+  update_windows()
 }
 
 function loop() {
@@ -108,41 +127,15 @@ onMounted(() => {
       fill="url(#floorPattern)"
     />
         <image
+          v-for="(window, i) in windows"
+          :key="i"
           href="/window.png"
-          :x="-canvasSize.x*1/3 + mod(canvasSize.x * 1/3 -bridePos.x, canvasSize.x*5/3)"
-          :y="canvasSize.y /2 - 16 - 7"
+          :x="window.x"
+          :y="window.y"
           :width="32"
           :height="32"
         />
-        <image
-          href="/window.png"
-          :x="-canvasSize.x*1/3 + mod(canvasSize.x * 2/3 -bridePos.x, canvasSize.x*5/3)"
-          :y="canvasSize.y /2 - 16 - 7"
-          :width="32"
-          :height="32"
-        />
-        <image
-          href="/window.png"
-          :x="-canvasSize.x*1/3 + mod(canvasSize.x * 3/3 -bridePos.x, canvasSize.x*5/3)"
-          :y="canvasSize.y /2 - 16 - 7"
-          :width="32"
-          :height="32"
-        />
-        <image
-          href="/window.png"
-          :x="-canvasSize.x*1/3 + mod(canvasSize.x * 4/3 -bridePos.x, canvasSize.x*5/3)"
-          :y="canvasSize.y /2 - 16 - 7"
-          :width="32"
-          :height="32"
-        />
-        <image
-          href="/window.png"
-          :x="-canvasSize.x*1/3 + mod(canvasSize.x * 5/3 -bridePos.x, canvasSize.x*5/3)"
-          :y="canvasSize.y /2 - 16 - 7"
-          :width="32"
-          :height="32"
-        />
-
+      
         <g
           :transform="`translate(10, ${bridePos.y})`"
           class="none"
