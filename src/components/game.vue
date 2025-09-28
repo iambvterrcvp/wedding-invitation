@@ -13,6 +13,11 @@ class Bullet {
   pos = new Vec2(0, 0);
   dir = new Vec2(0, 0);
 }
+class Nun {
+  life = 0
+  pos = new Vec2(0, 0);
+  index = 0
+}
 
 let mouse = reactive(new Vec2(0, 0))
 const canvasRef = ref(null);
@@ -70,14 +75,26 @@ function update_windows() {
 }
 
 let bullets = ref([])
-function update_bullets(delta, speed) {
+function update_bullets(delta) {
   bullets.value.forEach(bullet => {
     bullet.life += delta
-    bullet.pos.x += bullet.dir.x * speed * delta;
-    bullet.pos.y += bullet.dir.y * speed * delta;
+    bullet.pos.x += bullet.dir.x * .07 * delta;
+    bullet.pos.y += bullet.dir.y * .07 * delta;
   });
   bullets.value = bullets.value.filter(bullet => bullet.life < 1500);
 }
+
+let nuns = ref([])
+function update_nuns(delta) {
+  nuns.value.forEach(nun => {
+    nun.life += delta
+    nun.pos.x -= .02 * delta;
+    nun.pos.y = Math.sin(nun.life / 200) * 3 + 1;
+    nun.index = nun.life % 200 > 100 ? 1 : 0
+  });
+  nuns.value = nuns.value.filter(nun => nun.life < 6000);
+}
+
 
 let rifleDir = reactive(new Vec2(0,0))
 let rifleAngle = ref(0)
@@ -93,20 +110,28 @@ function dir_to_angle(dir) {
 }
 
 let bulletDelay = 1000000
-let nunAnimationIndex = 0
+let nunDelay = 1000000
 
 const update = (delta) => {
   const walkSpeed = .02
-  const bulletSpeed = .07
 
   bulletDelay += delta
   if (keys[" "] && bulletDelay > 200) {
     bulletDelay = 0
-    let bullet = new Bullet();
+    let bullet = new Bullet()
     bullet.pos = new Vec2(riflePos.x + rifleDir.x * 8.5, riflePos.y  + rifleDir.y * 8.5)
     bullet.dir = new Vec2(rifleDir.x, rifleDir.y)
     bullets.value.push(bullet)
   }
+
+  nunDelay += delta
+  if (nunDelay > 1000) {
+    nunDelay = 0
+    let nun = new Nun()
+    nun.pos = new Vec2(bridePos.x + 100, 0)
+    nuns.value.push(nun)
+  }
+
   
   walkedDistance.x = walkedDistance.x + delta * walkSpeed
 
@@ -115,9 +140,8 @@ const update = (delta) => {
   angle = Math.min(Math.max(angle, rifleRange.y), rifleRange.x)
   rifleAngle.value = angle
   update_windows()
-  update_bullets(delta, bulletSpeed)
-
-  nunAnimationIndex = time % 200 > 100 ? 1 : 0
+  update_nuns(delta)
+  update_bullets(delta)
 }
 
 let time = performance.now()
@@ -210,9 +234,11 @@ onMounted(() => {
           :height="brideSize.y"
         />
         <image
-          :href="nunImages[time % 200 > 100 ? 0 : 1]"
-          :x="bridePos.x + 40"
-          :y="bridePos.y - 40"
+          v-for="(nun, i) in nuns"
+          :key="i"
+          :href="nunImages[nun.index]"
+          :x="nun.pos.x"
+          :y="nun.pos.y"
           :width="nunSize.x"
           :height="nunSize.y"
         />
